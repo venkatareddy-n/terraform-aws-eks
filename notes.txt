@@ -1,0 +1,57 @@
+Upgrade Steps
+-------------
+1. create green node group with same capacity with version same version 1.30
+just un-comment green block and run terraform apply
+
+2. cordon green nodes (now pods will not go to green nodes)
+kubectl cordon <node_name> --> to stop secuduling to green nodes
+
+[ ec2-user@ip-10-0-1-15 ~ ]$ kubectl get nodes
+NAME                          STATUS   ROLES    AGE     VERSION
+ip-10-0-11-129.ec2.internal   Ready    <none>   69m     v1.30.4-eks-a737599
+ip-10-0-11-50.ec2.internal    Ready    <none>   7m27s   v1.30.4-eks-a737599
+ip-10-0-12-137.ec2.internal   Ready    <none>   69m     v1.30.4-eks-a737599
+ip-10-0-12-33.ec2.internal    Ready    <none>   7m29s   v1.30.4-eks-a737599
+
+3.89.206.79 | 10.0.1.15 | t2.micro | null
+[ ec2-user@ip-10-0-1-15 ~ ]$ kubectl cordon ip-10-0-11-50.ec2.internal
+node/ip-10-0-11-50.ec2.internal cordoned
+
+3.89.206.79 | 10.0.1.15 | t2.micro | null
+[ ec2-user@ip-10-0-1-15 ~ ]$ kubectl cordon ip-10-0-12-33.ec2.internal
+node/ip-10-0-12-33.ec2.internal cordoned
+
+3.89.206.79 | 10.0.1.15 | t2.micro | null
+[ ec2-user@ip-10-0-1-15 ~ ]$ kubectl get nodes
+NAME                          STATUS                     ROLES    AGE     VERSION
+ip-10-0-11-129.ec2.internal   Ready                      <none>   70m     v1.30.4-eks-a737599
+ip-10-0-11-50.ec2.internal    Ready,SchedulingDisabled   <none>   7m55s   v1.30.4-eks-a737599
+ip-10-0-12-137.ec2.internal   Ready                      <none>   70m     v1.30.4-eks-a737599
+ip-10-0-12-33.ec2.internal    Ready,SchedulingDisabled   <none>   7m57s   v1.30.4-eks-a737599
+
+3. upgrade eks contorl plane 1.30 to 1.31 manually from  AWS UI (in console)
+
+4. upgrade green node group to 1.31 manually from  AWS UI (in console) eks cluster --> compute -- green upgrade
+select force upgrade --> no work load is running in green
+it will create new worker nodes 
+once upgrade completed now its 1.31, in new version green nodes are automatically un-cordon, now pods will go to green nodes also.
+
+5. cordon blue nodes (now pods will not go to blue nodes)
+kubectl cordon ip-10-0-11-129.ec2.internal
+kubectl cordon ip-10-0-12-137.ec2.internal
+
+6. drain blue nodes  (drain means throw all pods from blue node groups to outside (it will go to green nodes automatically))
+kubectl drain ip-10-0-12-137.ec2.internal --ignore-daemonsets
+
+7. delete blue node groups
+change version to 1.31 in code
+cluster_version = "1.31"
+
+comment blue node group block in code
+
+terraform apply -auto-approve (nobe blue node grou will deleted),
+
+entire application will run on green nodes
+==============================================
+
+

@@ -99,6 +99,7 @@ resource "aws_security_group_rule" "eks_control_plane_bastion" {
   security_group_id = module.eks_control_plane_sg.id
 }
 
+#Node receiving traffic from VPC CIDR
 resource "aws_security_group_rule" "node_vpc" {
   type              = "ingress"
   from_port         = 0
@@ -125,7 +126,6 @@ resource "aws_security_group_rule" "mysql_bastion" {
   source_security_group_id       = module.bastion_sg.id
   security_group_id = module.mysql_sg.id
 }
-
 
 resource "aws_security_group_rule" "bastion_public" {
   type              = "ingress"
